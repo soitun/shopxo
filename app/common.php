@@ -449,6 +449,58 @@ function DataObjectToArray($data)
 }
 
 /**
+ * 数据处理时间格式
+ * @author  Devil
+ * @blog    http://gong.gg/
+ * @version 1.0.0
+ * @date    2026-06-10
+ * @desc    form已处理过的字符串时间则原样返回，仅纯数字时间戳才格式化
+ * @param   [mixed]             $time       [时间值]
+ * @param   [string]            $format     [格式]
+ * @param   [mixed]             $default    [空值默认]
+ */
+function DataHandleTimeFormat($time, $format = 'Y-m-d H:i:s', $default = '')
+{
+    if(empty($time))
+    {
+        return $default;
+    }
+    if(is_numeric($time))
+    {
+        return date($format, (int) $time);
+    }
+    return $time;
+}
+
+/**
+ * 数据处理json格式
+ * @author  Devil
+ * @blog    http://gong.gg/
+ * @version 1.0.0
+ * @date    2026-06-10
+ * @desc    form已处理过的数组则原样返回，仅字符串才json_decode
+ * @param   [mixed]             $data       [数据值]
+ * @param   [mixed]             $default    [空值默认]
+ */
+function DataHandleJsonDecode($data, $default = [])
+{
+    if(empty($data))
+    {
+        return $default;
+    }
+    if(is_array($data))
+    {
+        return $data;
+    }
+    if(is_string($data))
+    {
+        $result = json_decode($data, true);
+        return (json_last_error() === JSON_ERROR_NONE && is_array($result)) ? $result : $default;
+    }
+    return $default;
+}
+
+/**
  * 两个数组字段对比处理、arr1不存在arr2中的字段则移除
  * @author  Devil
  * @blog    http://gong.gg/
@@ -826,6 +878,29 @@ function MyCache($name = null, $value = '', $options = null, $tag = null)
 
     // 设置数据
     return cache($name, $value, $options, $tag);
+}
+
+/**
+ * 缓存读取或回调写入（默认120秒）
+ * @author  Devil
+ * @blog    http://gong.gg/
+ * @version 1.0.0
+ * @date    2026-06-10
+ * @desc    通用缓存封装：缓存不存在时执行回调获取数据并写入缓存，适用于商品详情、首页、插件钩子等任意场景
+ * @param   [string]          $cache_key [缓存key]
+ * @param   [callable]        $callback  [无缓存时数据获取回调]
+ * @param   [int]             $expire    [过期时间秒]
+ * @return  [mixed]
+ */
+function MyCacheRemember($cache_key, $callback, $expire = 120)
+{
+    $data = MyCache($cache_key);
+    if($data === null)
+    {
+        $data = call_user_func($callback);
+        MyCache($cache_key, $data, $expire);
+    }
+    return $data;
 }
 
 /**
